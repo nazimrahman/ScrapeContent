@@ -1,2 +1,2 @@
 # ScrapeContent
-PHP class for scraping content
+PHP class for scraping content.

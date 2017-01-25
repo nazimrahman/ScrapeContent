@@ -2,7 +2,7 @@
 class ScrapeContent
 {
 	// member data
-	var $sSourceAddress;		// url of source
+	//var $sSourceAddress;		// url of source
 	var $aLinks;				// array to store links
 	var $sFilterPattern;		// filter pattern
 	var $aFilteredResults;		// filtered results
@@ -10,24 +10,15 @@ class ScrapeContent
 	// constructor
 	function __construct() {
 		// initialize member data
-		$this->sSourceAddress = "/tmp";
 		$this->aLinks = array();
 		$this->sFilterPattern = '';
 		$this->aFilteredResults = array();
 	}
 
-	public function getSourceAddress() {
-		return $this->sSourceAddress;
-	}
-
-	public function setSourceAddress($address) {
-		$this->sSourceAddress = $address;
-	}
-
-	public function getLinks($fp = '') {
+	public function getLinks($txt,$fp = '') {
 		if (strlen($fp) > 1) {
 			$this->sFilterPattern = $fp;
-			$this->scrapeLinks();
+			$this->scrapeLinks($txt);
 			$this->filterLinks('links');
 		} else {
 			$this->scrapeLinks();
@@ -35,9 +26,13 @@ class ScrapeContent
 		return $this->aLinks;
 	}
 
-	private function scrapeLinks() {
+	public function resetLinksArray() {
+		$this->aLinks = array();
+	}
+
+	private function scrapeLinks($txt) {
 		// get html content
-		$sHTML = file_get_contents($this->sSourceAddress);
+		$sHTML = file_get_contents($txt);
 
 		//Create a new DOM document
 		$dom = new DOMDocument;
@@ -81,6 +76,40 @@ class ScrapeContent
 		
 		// release memory
 		unset($aLinks);
+	}
+
+	public function findWithXpath($xpath, $aaPattern) {
+		// pre: get xpath instance, list of patterns, and content
+		// post: return an associated array of matching text
+
+		// run all patterns through xquery
+		foreach ($aaPattern as $aPattern) {
+			$pattern = $aPattern[0];
+			$key = $aPattern[1];
+
+			// run the query
+			$nodelist = $xpath->query($pattern);
+			$node_counts = $nodelist->length;
+
+			// if there are resultss, store them in array
+			if ($node_counts) {
+				foreach ($nodelist as $element) {
+					// if you want breaks in different lines
+					// source content needs the following modification
+					// $source = preg_replace("/\<br\/\>/",'-br-',$source);
+					// $source = preg_replace("/\<br\>/",'-br-',$source);
+					if (preg_match("/-br-/", $element->nodeValue)) {
+						$tmparray = preg_split("/-br-/",$element->nodeValue);
+						if (count($tmparray) > 0) {
+							$aaData[$key][] = $tmparray;	
+						} 
+					} else {
+						$aaData[$key][] = $element->nodeValue;	
+					}
+				}
+			}
+		}
+		return $aaData; 		
 	}
 }
 ?>
